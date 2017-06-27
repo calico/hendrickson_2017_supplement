@@ -169,7 +169,7 @@ def generate_tracks( input_file, output_files, chrlens,
                             logfile=logfile)
     f.close()
     utils.write_chr_coverage_vectors(chrvec, f.name,mode='bedGraph')
-    logfile.write ('Executing' + ' '.join(['bedGraphToBigWig', f.name, chrlens,
+    logfile.write (' '.join(['Executing','bedGraphToBigWig', f.name, chrlens,
                                            output_files[0]]) + '\n')    
     try: 
         subprocess.check_call(['bedGraphToBigWig', f.name, chrlens, 
