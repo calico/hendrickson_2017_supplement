@@ -1,33 +1,9 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jun 26 13:14:04 2017
-
-@author: Ilya
-"""
 
 import numpy as np
 import itertools
 
-def complete_nans(expmat, method='interpolate'):
-    '''
-    Fills NAN values in the data
-    expmat - assumes series are in rows
-    method= 'interpolate' - for now the only method is used
-    '''
-    
-    i,j = np.isnan(expmat).nonzero()
-    n_cols = expmat.shape[1]
-    if method == 'interpolate':
-        for idx in range(len(i)):
-            if j[idx] == 0 :
-                neighbors = [ j[idx]+1 ]
-            elif j[idx] == n_cols-1:
-                neighbors = [ j[idx]-1 ]
-            else:
-                neighbors = [ j[idx]-1, j[idx]+1 ]
-                expmat[i[idx],j[idx]] = (expmat[i[idx],neighbors[0]] + expmat[i[idx],neighbors[1]])/2
-    return expmat
 
 def smooth(x,window_len=11,window='hanning'):
     """smooth the data using a window with requested size.

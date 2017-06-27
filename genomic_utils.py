@@ -1,10 +1,5 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jun 26 13:18:42 2017
-
-@author: Ilya
-"""
 
 import numpy as np
 import types, re
@@ -234,6 +229,7 @@ class Interval:
         
 get_chr_lens = lambda chrlen_file: dict([ (x.split()[0],int(x.split()[1])) for x in open(chrlen_file) ] )
 
+## The following functions parse GFF or BED files 
 def parse_gff_line( strg, feature_type_filter = 'CDS', name_regexp=r'.*Name=([a-zA-Z0-9-_]*);' ):
     fields = strg.split('\t')
     #print len(fields)
@@ -293,6 +289,10 @@ def parse_bed_line_gen(bed_iterator):
     return
 
 def get_interval_from_offset(interval, offset, ignore_strand):
+    '''
+    Extends the interval by the offset (start_offset, end_offset)    
+    '''
+    
     interval     = Interval(interval, ignore_strand)
     new_interval = Interval(interval)
     
