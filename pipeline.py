@@ -86,7 +86,7 @@ def insert_coverage_per_gene( input_file, output_file, annotation,
         None (output file is generated)
     '''
     
-    data = pickle.load( open( input_file ) )
+  
     dataframe = pd.DataFrame()
     if mode == 'tss':
         ranges = [ ( x-200,x ) for x in range( -800, 1200, 200 ) ]
@@ -103,7 +103,7 @@ def insert_coverage_per_gene( input_file, output_file, annotation,
             intervals = [ genomic_utils.get_interval_from_offset(x, rg, True) for x in 
                          genomic_utils.parse_bed_line_gen(open(annotation)) ]
             
-        icov = utils.get_ins_coverage(data, intervals, blacklist=blacklist,     
+        icov = utils.get_ins_coverage(input_file, intervals, blacklist=blacklist,     
                                       whitelist=whitelist)
         for x in icov:
             icov[x] = icov[x].sum()
