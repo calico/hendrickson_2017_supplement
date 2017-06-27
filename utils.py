@@ -177,6 +177,7 @@ def get_chr_coverage( fragments, size_range, chrlen_file,
     
             if cc%500000==0 :
                 print >>out, "get_chr_coverage:", fragments, "position", pos,cc
+                out.flush()
             chr_coverage[ pos.chromosome ][ 0,pos.pos ]+=pos.weight
             
     for chrom in chrlens:
