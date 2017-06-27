@@ -73,7 +73,7 @@ whitelist = params.whitelist
 blacklist = params.blacklist
 annotation_cvg = mkname( output_dir, input_file, '.bam','.annotation.tsv' )
 
-print >>sys.stdout, "Converting CVG (%s) to annotation coverages (%s)"%( cvg_file, annotation_file )
+print >>sys.stdout, "Converting CVG (%s) to annotation coverages (%s)"%( cvg_file, annotation_cvg )
 
 pipeline.insert_coverage_per_gene(cvg_file, annotation_cvg, annotation_file, whitelist=whitelist,
                                   blacklist = blacklist, mode='tss')

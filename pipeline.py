@@ -59,6 +59,7 @@ def get_coverage_vectors_atac_seq( input_file, output_file, chrlens ):
 def insert_coverage_per_gene( input_file, output_file, annotation, 
                              mode='tss', blacklist = '', whitelist = '' ):
     
+    
     '''
     Calculates insert coverage around TSS of each gene in the annotation. The interval (-1000,1000) around 
     the TSS is binned into 200 bp intervals and the depth normalized number of insertions is calculated for every bin. 
@@ -102,8 +103,8 @@ def insert_coverage_per_gene( input_file, output_file, annotation,
             intervals = [ genomic_utils.get_interval_from_offset(x, rg, True) for x in 
                          genomic_utils.parse_bed_line_gen(open(annotation)) ]
             
-        icov = utils.get_ins_coverage(data, intervals, blacklist=blacklist, 
-                                               normlist=whitelist)
+        icov = utils.get_ins_coverage(data, intervals, blacklist=blacklist,     
+                                      whitelist=whitelist)
         for x in icov:
             icov[x] = icov[x].sum()
             
