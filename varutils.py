@@ -4,7 +4,7 @@
 import numpy as np
 import itertools
 import os
-from exceptions import OSError
+import errno
 from os.path import join as pjoin
 from os.path import basename, dirname 
 
