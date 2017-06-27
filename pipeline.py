@@ -52,7 +52,7 @@ def get_coverage_vectors_atac_seq( input_file, output_file, chrlens ):
     with open( output_file[1], 'w' ) as log :
         fragments_file = input_file
         chr_coverage_all =  utils.get_chr_coverage( fragments_file, [0,1000], chrlens, out=log )
-        pickle.dump( chr_coverage_all, open( output_file,'w' ) , pickle.HIGHEST_PROTOCOL )
+        pickle.dump( chr_coverage_all, open( output_file[0],'w' ) , pickle.HIGHEST_PROTOCOL )
         
     return chr_coverage_all    
 
