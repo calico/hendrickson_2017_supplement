@@ -1,11 +1,10 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 
-import scipy
+import scipy.sparse
 import pickle, itertools, sys, os
 from pysam import AlignmentFile
 import varutils, genomic_utils
-print scipy.__path__
 def check_good_read(res):
     '''
     Checks if the read is 
