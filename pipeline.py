@@ -139,8 +139,8 @@ def generate_tracks( input_file, output_files, chrlens,
     '''
     
     input_data = pickle.load(open(input_file))
-    logfile = open(output_files[3],'w',0)
-    errfile = open(output_files[4],'w',0)
+    logfile = open(output_files[1],'w',0)
+    errfile = open(output_files[2],'w',0)
     logfile.write('Writing tracks\n')
     
         
