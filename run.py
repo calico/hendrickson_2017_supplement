@@ -14,7 +14,7 @@ from os.path import isfile
 import pipeline
 
 def is_valid_file(parser, arg):
-    if arg and not exists(arg) :
+    if arg and not isfile(arg) :
         parser.error("The file %s does not exist!" % arg)
     else:
         return arg  # return an open file handle
@@ -24,7 +24,7 @@ def is_valid_file(parser, arg):
 def parse_args(  ):
     parser = argparse.ArgumentParser(description=
                                         'Example of ATACseq processing', 
-                                        prog='atacseq_processing')
+                                        prog='atacseq_processing.py')
     parser.add_argument("input_file", help="Unsorted BAM file", 
                         type=lambda x: is_valid_file(parser, x))
     parser.add_argument("output_dir", help="Destination directory", type=str)
