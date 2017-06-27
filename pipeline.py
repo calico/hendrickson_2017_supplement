@@ -3,7 +3,6 @@
 
 import utils, genomic_utils
 import pickle, tempfile, os, subprocess, sys
-import numpy as np
 import pandas as pd
 
 
@@ -109,7 +108,8 @@ def insert_coverage_per_gene( input_file, output_file, annotation,
             icov[x] = icov[x].sum()
             
         dataframe[str(rg[0])] = pd.Series(icov)
-    dataframe.to_csv(output_file[0], sep='\t')
+        
+    dataframe.to_csv(output_file, sep='\t')
     
 
 def generate_tracks( input_file, output_files, chrlens, 

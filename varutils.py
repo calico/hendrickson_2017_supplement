@@ -3,7 +3,10 @@
 
 import numpy as np
 import itertools
-
+import os
+from exceptions import OSError
+from os.path import join as pjoin
+from os.path import basename, dirname 
 
 def smooth(x,window_len=11,window='hanning'):
     """smooth the data using a window with requested size.
@@ -74,3 +77,17 @@ def roundrobin(*iterables):
         except StopIteration:
             pending -= 1
             nexts = itertools.cycle(itertools.islice(nexts, pending))
+
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
+
+def mkname( directory, source_name, suffix_in, suffix_out, ):
+    return pjoin( directory, basename( source_name ).replace( suffix_in, suffix_out ) )
