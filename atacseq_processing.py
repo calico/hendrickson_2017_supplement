@@ -85,7 +85,6 @@ log_file = mkname( output_dir, input_file, '.bam','.bigWig.log')
 err_file = mkname( output_dir, input_file, '.bam','.bigWig.err')
 
 print >>sys.stdout, "Converting CVG (%s) to bigWig track (%s)"%( cvg_file, bigwig_file )
-
 pipeline.generate_tracks(cvg_file, [ bigwig_file, log_file, err_file ], chrlens_file, 
                          blacklist_file = blacklist, whitelist_file=whitelist, 
                          smoothing_profile='hanning', smoothing_window=1)
