@@ -1,33 +1,12 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jun 26 13:14:04 2017
-
-@author: Ilya
-"""
 
 import numpy as np
 import itertools
-
-def complete_nans(expmat, method='interpolate'):
-    '''
-    Fills NAN values in the data
-    expmat - assumes series are in rows
-    method= 'interpolate' - for now the only method is used
-    '''
-    
-    i,j = np.isnan(expmat).nonzero()
-    n_cols = expmat.shape[1]
-    if method == 'interpolate':
-        for idx in range(len(i)):
-            if j[idx] == 0 :
-                neighbors = [ j[idx]+1 ]
-            elif j[idx] == n_cols-1:
-                neighbors = [ j[idx]-1 ]
-            else:
-                neighbors = [ j[idx]-1, j[idx]+1 ]
-                expmat[i[idx],j[idx]] = (expmat[i[idx],neighbors[0]] + expmat[i[idx],neighbors[1]])/2
-    return expmat
+import os
+import errno
+from os.path import join as pjoin
+from os.path import basename, dirname 
 
 def smooth(x,window_len=11,window='hanning'):
     """smooth the data using a window with requested size.
@@ -98,3 +77,17 @@ def roundrobin(*iterables):
         except StopIteration:
             pending -= 1
             nexts = itertools.cycle(itertools.islice(nexts, pending))
+
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
+
+def mkname( directory, source_name, suffix_in, suffix_out, ):
+    return pjoin( directory, basename( source_name ).replace( suffix_in, suffix_out ) )

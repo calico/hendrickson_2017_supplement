@@ -1,19 +1,10 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jun 26 11:43:43 2017
 
-@author: ilyasoifer
-"""
-
-import numpy as np
-import scipy
-import types
-import pickle, itertools, sys
+import scipy.sparse
+import pickle, itertools, sys, os
 from pysam import AlignmentFile
-#import pysam
 import varutils, genomic_utils
-
 def check_good_read(res):
     '''
     Checks if the read is 
@@ -22,7 +13,7 @@ def check_good_read(res):
     c. Forward-Reverse orientation
     
     Input: 
-        res - pysam Alignment
+        res - pysam.AlignedSegment
     Output: 
         boolean True/False
     '''
@@ -45,6 +36,8 @@ def check_good_read(res):
 def check_fr( res ):
     '''
     Checks if the alignment is Forward-Reverse
+    Input: 
+        res - pysam.AlignedSegment
     '''
     
     if not res.is_reverse and res.reference_start <= res.next_reference_start:
@@ -58,15 +51,29 @@ def check_fr( res ):
 def pesam2bed( input_file, chrlen_file, output_file, logfile, errfile,
               filter_function = check_good_read):
     '''
-    This 
+    Converts aligned BAM file into BED file of fragments filtering reads that do not pass the filtering criteria
+    
+    Input: 
+        input_file - aligned (unsorted) paired end BAM
+        chrlen_file - TSV file of format chromosome<TAB>length
+        output_file - output file (BED file with start and end corresponding to both ends of the PE fragment)
+        logfile, errfile - logging files
+        filter_function - function that accepts an aligned read (pysam.AlignedSegment) and returns true, false or weight of the fragment
+                            Default: utils.check_good_reads
+                            Note: the function can return weight, if trying to accommodate reads from repetitive sequences
+    
+    Output: 
+        None (written into output file)
+    
+    See also: 
+        check_good_read
+        
     '''
     
     samfile = AlignmentFile(input_file)
 
+    take_read = [ x for x in itertools.imap(filter_function, samfile)]
     # check good_read also checks if this is R1... 
-    gsamfile = itertools.groupby( samfile, lambda x : x.query_name )
-    take_read = [ y for x in itertools.imap(lambda x : filter_function(x[1]),
-                                                gsamfile ) for y in x ]
     samfile.reset()
    
     logfile.write("%d out of %d reads passed filtering\n"%(sum(take_read), len(take_read)/2))
@@ -85,8 +92,6 @@ def pesam2bed( input_file, chrlen_file, output_file, logfile, errfile,
         read_1 = r
         if take_read[i] == 0 :
             continue
-        
-
         if not read_1.is_reverse :
             rstart = read_1.reference_start
 
@@ -139,8 +144,19 @@ def pesam2bed( input_file, chrlen_file, output_file, logfile, errfile,
 def get_chr_coverage( fragments, size_range, chrlen_file,
                      out=sys.stdout ): 
     '''
+    Reads PEBED with ATACseq insertions and generates a dictionary of per-nucleotide ATAC insertion density. 
+    Ends of fragments are shifted by 4 and 5 nucleotides to accommodate for the Tn5 binding site location. 
     
+    Input: 
+        fragments - PEBED file
+        size_range - limits for fragment sizes to count as valid insertions [min_length, max_length]
+        chrlen_file - TSV file of format chromosome<TAB>length
+        out - handle to write the log\err to
+    
+    Output: 
+        Dictionary (with keys=chromosomes) of vectors with number of insertions at every nucleotide
     '''
+    
     chrlens = genomic_utils.get_chr_lens(chrlen_file)
     chr_coverage = {}
     for chrom in chrlens:
@@ -148,21 +164,20 @@ def get_chr_coverage( fragments, size_range, chrlen_file,
 
     with open(fragments) as fragments_file :
         it1,it2 = itertools.tee(genomic_utils.parse_bed_line_gen(fragments_file))
-        # 4 is the shift between the insert point to the actual site
         itstart = itertools.ifilter(lambda x:x.length >= size_range[0] \
                                 and x.length <= size_range[1], \
                                 itertools.imap(lambda x: genomic_utils.Position((x[0],x[1] \
                                 + 4,x[2]-x[1]-8,x[3]), weight=x[5]),it1 ))
-        # BED is half-open, so the end does not belong to the fragment
         itend    = itertools.ifilter(lambda x:x.length >= size_range[0] \
                                 and x.length <= size_range[1], \
                                 itertools.imap(lambda x: genomic_utils.Position((x[0],x[2]-5,\
-                                x[2]-x[1]-8,x[3]), weight=x[5]),it2 )) 
+                                x[2]-x[1]-10,x[3]), weight=x[5]),it2 )) 
         
         for cc,pos in enumerate( varutils.roundrobin( itstart, itend ) ):
-
+    
             if cc%500000==0 :
                 print >>out, "get_chr_coverage:", fragments, "position", pos,cc
+                out.flush()
             chr_coverage[ pos.chromosome ][ 0,pos.pos ]+=pos.weight
             
     for chrom in chrlens:
@@ -170,65 +185,95 @@ def get_chr_coverage( fragments, size_range, chrlen_file,
             
     return chr_coverage
 
-
-def get_ins_coverage( fragments_bed, intervals, size_range = None, \
-                     chrlen_file = None, norm_factor = None, \
-                     blacklist = '', normlist = '', pseudocount = 0): 
+def get_chr_coverage_vector(chrcov, smoothing_window=1,
+                            smoothing_profile='hanning', 
+                            logfile=open(os.devnull,'w')):
     '''
+    Converts the vector of insert densities to list of positions with non-zero insert density, potentially after smoothing.
+    This is useful for writing the data into a file in bedGraph/bigWig formats. 
+    
+    See also: 
+        pipeline.generate_tracks
+        
     Input: 
-        fragments  
-        intervals 
-        size_range
-        chrlen_file
-        norm_factor
-        blacklist
-        normlist
-        pseudocount
-    if  size_range a string ('low','high' or 'all'), 
-    fragments_bed should be .pickle file that the pipeline generates
-    Otherwise it is assumed to be a bed file of 
-    aligned reads and chr coverage is calculated anew 
-    
+        chrcov - chromosome coverage dictionary (output of get_chr_coverage)
+        smoothing_window - size of smoothing window (default: 1, no smoothing)
+        smoothing_profile - profile of smoothing window (flat, hanning, hamming, bartlett, blackman)
+        logfile - handle of the log file (default - devnull, no logging)
     '''
-    pseudocount = float(pseudocount)
-    if type(fragments_bed)!=types.ListType:
-        fragments_bed = [ fragments_bed ]
-    if type(size_range) == type('low') and size_range=='low':
-        chr_coverages = [ pickle.load(open(x))['low'] for x in fragments_bed ]
-    elif type(size_range) == type('high') and size_range == 'high':   
-        chr_coverages =  [ pickle.load(open(x))['high'] for x in fragments_bed ]
-    elif type(size_range) == type('all') and size_range == 'all':   
-        chr_coverages =  [ pickle.load(open(x))['all'] for x in fragments_bed ]
-
-    elif type(fragments_bed[0]) == type({}):
-        chr_coverages = fragments_bed
-    else:
-        chr_coverages = [ get_chr_coverage( x, size_range, chrlen_file ) 
-                                for x in fragments_bed ]
     
-    chr_coverage = unite_chr_coverage( chr_coverages )
+    res = {}
+    for x in chrcov:
+        if smoothing_window > 1:
+            logfile.write("Smoothing %s\n"%x)
+            chrc = chrcov[x].toarray()
+            chrc = varutils.smooth(chrc[0,:], smoothing_window, window=smoothing_profile)
+            nz = chrc.nonzero()
+            res[x] = (nz[0], chrc[nz])
+        else:
+            res[x] = scipy.sparse.find(chrcov[x])[1:]
+       
+    return res
+
+
+
+def get_ins_coverage( fragments_file, intervals, norm_factor = None, \
+                     blacklist = '', whitelist = '', pseudocount = 0): 
+    '''
+    Gets a set of intervals and calculates the depth normalized insert coverage (i.e. insertion density) on each interval
+    The depth normalization is done so that either the total number of insertions in the whitelist intervals is constant (if whitelist is given)
+    or the total number of insertions everywhere outside the blacklist is constant. 
+    
+    Input: 
+        
+        fragments - python pickle file (dictionary with vectors of insert numbers on each chromosome), output of 
+                    utils.get_chr_coverage
+        intervals - list of genomic_utils.Intervals to calculate insertion density on. 
+        norm_factor - normalization factor to convert the coverage to insertion density 
+                    (optional, would be calculated internally using blacklist or whitelist if not given)
+        blacklist - optional blacklist file: normalization would be calculated on all the genome except for 
+                    blacklisted intervals.
+        whitelist - similar to blacklist but the normalization coverage will be calculated 
+                    only based on intervals in the whitelist
+
+        pseudocount - pseudocount is optioanally added to each 
+
+        Note:  In the whitelist/blacklist lines are tab-separated: chromosome start end (optional fields after are ignored ),
+                    start, end are 1-based, interval is closed
+                    optionally line could be chromosome (without start and end)
+
+    Output: 
+
+        Dictionary of normalized insertion coverage vectors. Keys are either "gene" property of intervals in the list 
+        or hash of the interval if they have no "gene" property. 
+    
+    See also:     utils.get_norm_factor, pipeline.insert_coverage_per_gene
+        
+    '''
+    
+    pseudocount = float( pseudocount )
+    
+    chr_coverage = pickle.load( open( fragments_file ) )
+    
     if not norm_factor:
         if blacklist: 
             norm_factor = get_norm_factor( chr_coverage, blacklist=open(blacklist ))
-        elif normlist:
-            norm_factor = get_norm_factor( chr_coverage, whitelist=open(normlist ))
+        elif whitelist:
+            norm_factor = get_norm_factor( chr_coverage, normlist=open(whitelist))
         else:
             norm_factor = get_norm_factor( chr_coverage,  '', '')
     
-    intervals = map(lambda x: genomic_utils.Interval(x,True), intervals)
+    intervals = map( lambda x: genomic_utils.Interval(x,True), intervals )
     interval_dct = {}
     count = 0
-    intervals  = sorted(intervals, key = lambda x: x.chromosome )
-    gintervals = itertools.groupby(intervals, lambda x:x.chromosome)
+    intervals  = sorted( intervals, key = lambda x: x.chromosome )
+    gintervals = itertools.groupby( intervals, lambda x:x.chromosome )
+
     for grp in gintervals :
         if grp[0] not in chr_coverage :
                 continue
-        if type( chr_coverage[grp[0]] ) == type( np.ndarray((0,0))):
-            chromosome = chr_coverage[grp[0]]
-        else: 
-            chromosome = chr_coverage[grp[0]].toarray()
-        if chromosome.ndim == 1 :
-            chromosome = chromosome.reshape(1,-1)
+            
+        chromosome = chr_coverage[grp[0]].toarray()
 
         for interval in grp[1]:
             count += 1
@@ -255,41 +300,31 @@ def get_ins_coverage( fragments_bed, intervals, size_range = None, \
                                  * norm_factor
     return interval_dct
     
-
-def check_good_read(res):
-    if res.is_secondary:
-        return False
-    if res.is_unmapped or res.mapping_quality < 30 : 
-        return False
-    if res.is_paired : 
-            if res.is_read2:  # working only on read1 
-                return False
-            if res.is_unmapped or res.mate_is_unmapped:
-                return False
-            if not res.is_reverse ^ res.mate_is_reverse : 
-                return False
-            if not check_fr(res):
-                return False
-    return True
     
+def write_chr_coverage_vectors( chrcov_vector, output_file,mode='dat' ):
+    '''
+    Write chromosome coverage either as dat or bedGraph format
+    Input: 
+        chrcov_vector - output of utils.get_chr_coverage_vector
+        output_file - name of output file
+        mode - bedGraph or dat
+    '''
+    out = open(output_file,'w')
+    chr_sorted = sorted(chrcov_vector.keys())
+    for x in chr_sorted:
+        for y in range(len(chrcov_vector[x][0])):
+            if mode == 'dat':
+                out.write('%s\t%d\t%d\n'%(x, chrcov_vector[x][0][y], chrcov_vector[x][1][y]))
+            elif mode == 'bedGraph': 
+                out.write('%s\t%d\t%d\t%G\n'%(x, chrcov_vector[x][0][y], chrcov_vector[x][0][y]+1,chrcov_vector[x][1][y]))
+                
+    out.close()
 
 
-
-
-
-def unite_chr_coverage(coverages):
-    if not coverages:
-        return None
-    result = coverages[0]
-    for c in coverages[1:]:
-        for key in result.keys():
-            result[key]+=c[key]
-    return result
-
-    
 def get_norm_factor( chrcov, blacklist = [], whitelist = [] ):
     '''
-    Get the normalization factor 
+    Get the normalization factor that should multiply the insert density coverages so that 
+    the coverages on whitelist or outside of blacklist sum up to 100.
     
     Input: 
         chrcov - dictionary of nucleotide coverages for each chromosome
@@ -305,8 +340,8 @@ def get_norm_factor( chrcov, blacklist = [], whitelist = [] ):
         
         normalization factor, that the coverages should be multiplied by so that the 
         sum of all coverages outside blacklist is 100 ( or sum of all coverages in whitelist are 100)
-            
     '''
+    
     vals = [ chrcov[x].sum() for x in chrcov ]
     if whitelist:
         whitelist_flag = True
