@@ -74,10 +74,8 @@ def pesam2bed( input_file, chrlen_file, output_file, logfile, errfile,
     
     samfile = AlignmentFile(input_file)
 
+    take_read = [ x for x in itertools.imap(filter_function, samfile)]
     # check good_read also checks if this is R1... 
-    gsamfile = itertools.groupby( samfile, lambda x : x.query_name )
-    take_read = [ y for x in itertools.imap(lambda x : filter_function(x[1]),
-                                                gsamfile ) for y in x ]
     samfile.reset()
    
     logfile.write("%d out of %d reads passed filtering\n"%(sum(take_read), len(take_read)/2))
