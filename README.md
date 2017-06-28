@@ -20,7 +20,7 @@ The processing is done by `running atacseq_processing.py` as described below. Th
 ### Clone git repository
 
     mkdir atacseq_analysis
-    git clone ??? atacseq_analysis
+    git clone git@github.com:calico/hendrickson_2017_supplement.git atacseq_analysis
 
 ### Download example data
     cd atacseq_analysis
@@ -50,6 +50,19 @@ The processing is done by `running atacseq_processing.py` as described below. Th
       --blacklist BLACKLIST
                             Name of blacklist file
                             
+## Parameter explanation
+   * input_file - unsorted BAM file with aligned reads
+   * output_dir - directory to write the output (will be created if missing)
+   * chrlens_file - TSV of format: chromosome   length
+   * annotation_file - BED or GTF file with a single interval per gene. 
+   * whitelist - if given, the insertion coverage will be normalized so that the total
+    number of insertions in the whitelist is the same between samples.
+   * blacklist - if given, the insertion coverage will be normalized so that the total number of insertions in the genome
+   outside the blacklist is constant
+   
+   Both whitelist and blacklist are TSV files with lines of the format `chromosome  start end`, where the intervals 1-based 
+   and closed. Alternatively, also lines with only the chromosome name are also permitted. 
+   
 ## Example 
 
     python atacseq_processing.py data/ processed_data data/SacCer3.fasta.len data/annotation.bed 
