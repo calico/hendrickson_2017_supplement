@@ -1,4 +1,4 @@
-# Supplementary code for Henderson et al., 2017 "Simultaneous profiling of DNA accessibility and gene expression dynamics with ATAC-seq and RNA-seq" 
+# Supplementary code for Henderickson et al., 2017 "Simultaneous profiling of DNA accessibility and gene expression dynamics with ATAC-seq and RNA-seq" 
 
 ## Summary 
 
