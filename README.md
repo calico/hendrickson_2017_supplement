@@ -26,7 +26,8 @@ The processing is done by `running atacseq_processing.py` as described below. Th
     cd atacseq_analysis
     mkdir data
     cd data 
-    download from bucket
+    scp {}@hal9k:/home/ilyas/yeast/paper_supp/data/* .
+    
 
 ## Usage
 
@@ -58,12 +59,13 @@ The processing is done by `running atacseq_processing.py` as described below. Th
    * whitelist - if given, the insertion coverage will be normalized so that the total
     number of insertions in the whitelist is the same between samples.
    * blacklist - if given, the insertion coverage will be normalized so that the total number of insertions in the genome
-   outside the blacklist is constant
+   outside the blacklist is constant between samples. 
    
    Both whitelist and blacklist are TSV files with lines of the format `chromosome  start end`, where the intervals 1-based 
    and closed. Alternatively, also lines with only the chromosome name are also permitted. 
    
 ## Example 
 
-    python atacseq_processing.py data/ processed_data data/SacCer3.fasta.len data/annotation.bed 
+    python atacseq_processing.py data/GCN4_t0_S1_L001_R1_001.mrg.bam processed_data \
+                            data/SacCer3.fasta.len data/annotation.bed \
                             --blacklist data/blacklist.tsv 
