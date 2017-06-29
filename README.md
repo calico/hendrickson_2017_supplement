@@ -65,7 +65,7 @@ The processing is done by `running atacseq_processing.py` as described below. Th
    and closed. Alternatively, also lines with only the chromosome name are also permitted. 
    
 ## Example 
-
+    cd atacseq_analysis
     python atacseq_processing.py data/GCN4_t0_S1_L001_R1_001.mrg.bam processed_data \
                             data/SacCer3.fasta.len data/annotation.bed \
                             --blacklist data/blacklist.tsv 
