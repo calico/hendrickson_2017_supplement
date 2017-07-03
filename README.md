@@ -23,10 +23,10 @@ The processing is done by `running atacseq_processing.py` as described below. Th
     git clone git@github.com:calico/hendrickson_2017_supplement.git atacseq_analysis
 
 ### Download example data
+
     cd atacseq_analysis
-    mkdir data
-    cd data 
-    scp {}@hal9k:/home/ilyas/yeast/paper_supp/data/* .
+    wget https://hendrickson_2017_supplement.storage.googleapis.com/data.tar.gz
+    tar xvfz data.tar.gz
     
 
 ## Usage
