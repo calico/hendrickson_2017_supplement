@@ -38,6 +38,7 @@ def smooth(x,window_len=11,window='hanning'):
 
     TODO: the window parameter could be the window itself if an array instead of a string
     NOTE: length(output) != length(input), to correct this: return y[(window_len/2-1):-(window_len/2)] instead of just y.
+    NOTE: The code is copied from http://scipy-cookbook.readthedocs.io/items/SignalSmooth.html
     """
 
     if x.ndim != 1:
@@ -66,8 +67,10 @@ def smooth(x,window_len=11,window='hanning'):
     return y[(window_len/2-1):-(window_len/2)]
 
 def roundrobin(*iterables):
-    "roundrobin('ABC', 'D', 'EF') --> A D E B F C"
+    """roundrobin('ABC', 'D', 'EF') --> A D E B F C
+    NOTE: The code is copied from the itertools Tutorial
     # Recipe credited to George Sakkis
+    """
     pending = len(iterables)
     nexts = itertools.cycle(iter(it).next for it in iterables)
     while pending:
