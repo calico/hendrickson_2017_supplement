@@ -4,7 +4,7 @@
 
 This is the code for reproducing the bioinformatic analyses of the yeast ATACseq data (section 3.3). We assume that the library was demultiplexed and aligned to the genome as described in sections 3.3.1-3.3.2. Analysis of RNAseq data is described in detail [elsewhere](http://www.nature.com/nprot/journal/v7/n3/full/nprot.2012.016.html). 
 
-The processing is done by `running atacseq_processing.py` as described below. The input is the aligned __unsorted__ BAM file and the output is the bigWig track of normalized insertion densities, python `pickle` file that contains the insertion coverage for every nucleotide in the genome and tab separated file containgin the coverage of insertions in 200 bp bins spanning -1000..1000 bases around the transcription start sites. 
+The processing is done by `running atacseq_processing.py` as described below. The input is the aligned __unsorted__ BAM file and the output is the bigWig track of normalized insertion densities, python `pickle` file that contains the insertion coverage for every nucleotide in the genome and tab separated file containing the coverage of insertions in 200 bp bins spanning -1000..1000 bases around the transcription start sites. 
 
 ## Requirements 
 
